@@ -14,10 +14,10 @@ char * t_pointers[7];
 void print_screen(void);
 char * deck_pointer;// = &deck[51];
 char * showing_card; // The first card before deck_pointer that is showing. 
-char deck[52] = {38, 24, 7, 35, 42, 30, 26, 49, 29, 43, 11, 48, 19, 36, 23, 45, 37, 46, 44, 27, 12, 17, 39, 14, 2, 13, 6, 16, 32, 20, 52, 28, 31, 40, 18, 22, 15, 21, 10, 1, 8, 50, 51, 5, 41, 47, 34, 3, 25, 33, 4, 9};
+// TODO: last one should be 9
+char deck[52] = {38, 24, 7, 35, 42, 30, 26, 49, 29, 43, 11, 48, 19, 36, 23, 45, 37, 46, 44, 27, 12, 17, 39, 14, 2, 13, 6, 16, 32, 20, 52, 28, 31, 40, 18, 22, 15, 21, 10, 1, 8, 50, 51, 5, 41, 47, 34, 3, 25, 33, 4, 7};
 void draw_card(int num)
 {
-    //char graphics[12] = {0};
     int suit;
     int rank;
     char color;
@@ -64,7 +64,7 @@ void deal(void)
 void print_screen()
 {
     int i, j;
-    printf("\033c\033[35m\t W\t\t D\t C\t H\t S\033[0m\n");
+    printf("\033[35m\t W\t\t D\t C\t H\t S\033[0m\n");
     if (*deck_pointer)
         printf("x x\t");
     else
@@ -76,6 +76,16 @@ void print_screen()
       }
     else
         printf("\t\t");
+    for (i=0;i<4;i++)
+      {
+        draw_card(43);
+//        printf("%s\t", graphics);
+//        if (foundations[i][0])
+//          {
+            draw_card(foundations[i][0]);
+            printf("%s\t", graphics);
+//          }
+      }
 
 
 
@@ -105,6 +115,14 @@ void print_screen()
 
         printf("\n");
       }
+    for (i=0; i<7;i++)
+      {
+        printf("%p ", tableaux[i]);
+      }
+    printf("\n");
+    for (i=0; i<7;i++)
+        printf("%p ", t_pointers[i]);
+    printf("\n");
 
 
 }
@@ -153,21 +171,53 @@ void move_pointer(void)
 
 
 }
+//int to_foundation(char * source)
+int to_foundation(int source_pile)
+{
+    char * source_pointer;
+    source_pointer = t_pointers[source_pile];
+    while (*source_pointer)
+      {
+        source_pointer++;
+      }
+    source_pointer--;
+
+    char card = *source_pointer;
+    int suit, rank_card, rank_foundation;
+    card--;
+    suit = card / 13;
+    rank_card = card % 13;
+    rank_foundation = (foundations[suit][0]-1) % 13;
+    if (rank_card - rank_foundation == 1 || rank_card == 0 && rank_foundation == 0)
+      {
+        foundations[suit][0] = ++card;
+      }
+    *source_pointer = 0;
+    // TODO: what if it's the last card?
+}
 int is_valid_descending(int source, int dest_pile)
 {
     source--;
     char * dest_pointer;
+    int source_suit = source / 13;
+    int source_rank = source % 13;
     dest_pointer = t_pointers[dest_pile];
+    printf("dest_pointer: %p", dest_pointer);
+    if (dest_pointer == tableaux[dest_pile] && source_rank == 12)
+      {
+        printf("it worked!");
+        return 1;
+      }
     while(*dest_pointer)
       {
+        
         dest_pointer++;
       }
     dest_pointer--;
+    printf("source_rank = %d\tdest_pointer = %p\t should be: %p", source_rank, dest_pointer, &tableaux[dest_pile][0]);
     char dest = *dest_pointer - 1;
     int dest_suit = dest / 13;
-    int source_suit = source / 13;
     int dest_rank = dest % 13;
-    int source_rank = source % 13;
 
     if ((source_suit % 2 != dest_suit % 2) && (dest_rank - source_rank == 1))
         return 1;
@@ -219,9 +269,12 @@ void tab_to_tab(int source_pile, int dest_pile)
       {
         return;
       }
+    
     if (source_pointer == t_pointers[source_pile]) // TODO and isnt empty
       {
         t_pointers[source_pile]--;
+        if (t_pointers[source_pile] < tableaux[source_pile])
+            t_pointers[source_pile]++;
       }
     while (source_pointer <= bottom_pointer)
       {
@@ -239,6 +292,7 @@ void tab_to_tab(int source_pile, int dest_pile)
 void move_to_end(char source, int dest_pile)
 {
     char * pointer = t_pointers[dest_pile];
+    printf("test...");
     while (*pointer)
       {
         pointer++;
@@ -280,6 +334,10 @@ int main()
         if (string_length == 2 && str[0] == 'k')
 //            burn_card();
             tab_to_tab(1, 4);
+        if (string_length == 3 && isdigit(str[0]) && str[1] == 'f')
+          {
+            to_foundation(str[0]-'1');
+          }
         if (string_length == 3 && isdigit(str[0]) && isdigit(str[1]))
           {
             tab_to_tab(str[0] - '1', str[1] - '1');
